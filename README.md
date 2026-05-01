@@ -9,7 +9,7 @@ all automation. Each status maps to a specific action:
 |---|---|---|
 | Planning | Session being drafted | None |
 | Approved | Session confirmed | Create calendar event + form |
-| Details Edited | Previously approved, details changed | Update calendar event → reset to Approved |
+| Details Edited | Previously approved, details changed | Update calendar event — resets to Approved |
 | Planning On Hold | Paused before approval — event never created | None |
 | Cancelled | Session called off | Delete calendar event + notify attendees |
 | Done | Session completed | Archive |
