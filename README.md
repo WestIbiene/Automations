@@ -145,8 +145,14 @@ Mark Invite Sent
 ```
 ---
 
-## Planning Sheet — Status Logic
+## Workflow Schema
+**Zap1-event-creation**
+![Zap 1 Architecture](zap1-event-creation.png)
 
+**Zap2-attendee-invite**
+![Zap 2 Architecture](zap2-attendee-invite.png)
+
+---
 The **Done?** column is the single source of truth that drives 
 all automation. Each status maps to a specific action:
 
