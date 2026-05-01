@@ -1,3 +1,148 @@
+# Community Session Invite System
+
+A fully automated online session planning and calendar invite system 
+for remote teams and professional communities. Built with Google 
+Sheets, Google Forms, Google Calendar, and Zapier.
+
+---
+
+## The Problem
+
+During my time volunteering with an organization, I noticed session attendance 
+declining steadily over time. Several factors could explain this, but 
+one stood out clearly. Attendees were not receiving calendar invites 
+for sessions. Only an event link was shared publicly on WhatsApp and 
+LinkedIn. For busy professionals who may have missed those 
+announcements, there was no second layer of reminder. No calendar 
+block. No notification on the day.
+
+I personally avoided missing sessions by manually copying the link and 
+creating my own Google Calendar event each time. Most people do not do 
+that. If it is not on your calendar, it does not happen.
+
+Beyond attendance, the org had a growing database of leads — 
+professionals who had shown interest in their sessions — with no 
+structured way to convert that interest into confirmed attendance. A 
+registration system with automatic calendar invites would solve both 
+problems at once.
+
+---
+
+## What It Does
+
+Session planning is managed on a Google Sheet — simple, flexible, and 
+easy to update as details change. Once a session is marked as 
+**Approved**, the automation triggers:
+
+- A Google Calendar event is created automatically
+- The event link is written back to the planning sheet
+
+The session can then be announced publicly — this time with a 
+registration form link alongside it. When someone registers, they 
+automatically receive a Google Calendar invite to the session.
+
+If a session is cancelled, the calendar event is deleted and 
+registered attendees receive a cancellation notification. 
+
+The registration sheet also serves as a lead database. The organization can 
+track attendance patterns, grow their audience data, and use 
+registration records for future session marketing.
+
+---
+
+## Data Integrity and Duplicate Prevention
+
+Data cleaning is handled directly on Google Sheets using formulas 
+before the automation runs. This keeps the Zap logic simple, 
+reduces unnecessary automation runs, and makes the system easier 
+to troubleshoot.
+
+The sheet checks for:
+- **Duplicate registrations** — prevents the same person registering 
+  multiple times for the same session
+- **Invite already sent** — prevents the calendar invite from being 
+  sent more than once to the same attendee
+
+Handling this at the sheet level rather than inside the Zap keeps 
+the automation clean and predictable.
+
+---
+
+## Architecture
+
+The workflow is split into two separate Zaps to avoid loops and 
+reduce complexity.
+
+```
+Zap 1: Event Creation and Deletion
+        │
+        ▼
+Google Sheets — Updated Row (Planning Sheet)
+  Dedupe column: Done?
+  Timezone: Africa/Lagos
+        │
+        ▼
+Branching — Split by Criteria
+   ┌──────────────┬──────────────┐
+   ▼              ▼
+Path A            Path B
+(Approved)        (Cancelled)
+   │              │
+   ▼              ▼
+Google Calendar   Google Calendar
+Create Event      Search Event
+   │              │
+   ▼              ▼
+Google Sheets     Google Calendar
+Update row        Delete Event
+(Event ID,        (with notifications)
+Hangout link,        │
+HTML link)           ▼
+                  Google Sheets
+                  Search rows by Session ID
+                     │
+                     ▼
+                  Loop Values
+                     │
+                     ▼
+                  Google Sheets
+                  Update rows
+                  (mark as Event Canceled)
+
+
+Zap 2: Attendee Registration
+        │
+        ▼
+Google Sheets — Updated Row (Form Response Sheet)
+  Dedupe column: Invite Sent
+  Timezone: Africa/Lagos
+        │
+        ▼
+Branching — Split by Criteria
+   ┌──────────────┬──────────────┐
+   ▼              ▼
+Path A            Path B
+(Both F & G       (Only G empty
+empty)            duplicate detected)
+   │              │
+   ▼              ▼
+Google Sheets     Google Sheets
+Lookup by         Delete duplicate row
+Session ID
+   │
+   ▼
+Google Calendar
+Search Event
+   │
+   ▼
+Google Calendar
+Add Attendee
+   │
+   ▼
+Google Sheets
+Mark Invite Sent
+(Column F = True)
+```
 ---
 
 ## Planning Sheet — Status Logic
@@ -9,10 +154,9 @@ all automation. Each status maps to a specific action:
 |---|---|---|
 | Planning | Session being drafted | None |
 | Approved | Session confirmed | Create calendar event + form |
-| Details Edited | Previously approved, details changed | Update calendar event — resets to Approved |
 | Planning On Hold | Paused before approval — event never created | None |
 | Cancelled | Session called off | Delete calendar event + notify attendees |
-| Done | Session completed | Archive |
+| Done | Session completed | None |
 
 ---
 
@@ -29,8 +173,6 @@ all automation. Each status maps to a specific action:
 | Session ID | Unique identifier linking planning sheet to attendee sheet |
 | Calendar Event ID | Written by Zapier after event creation |
 | Calendar Event Link | Written by Zapier after event creation |
-| Form Link | Written by Zapier after form creation |
-| Form Response Sheet Link | Written by Zapier after sheet creation |
 
 ---
 
@@ -123,7 +265,7 @@ the full build from running on free Zapier.
 better choice. 1,000 operations per month, full multi-step 
 support, Router module for branching, and Loop support — all 
 on the free tier. This entire workflow can run on Make's free 
-plan for a small organisation like SHRPAN.
+plan for a small organisation.
 
 **Recommendation:** Rebuild this workflow on Make for 
 production deployment. The logic is identical — only the 
